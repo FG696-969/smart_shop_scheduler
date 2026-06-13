@@ -7,21 +7,54 @@
 ![Plotly](https://img.shields.io/badge/Visualization-Plotly-purple)
 ![Scheduling](https://img.shields.io/badge/Problem-JSSP%20%7C%20Dynamic%20Rescheduling-green)
 
+## Demo Screenshots
+
+### Initial schedule dashboard
+
+![Initial schedule dashboard](docs/assets/dashboard-initial.png)
+
+### Disturbance and performance comparison
+
+![Disturbance and performance comparison](docs/assets/dashboard-comparison.png)
+
+### Rescheduled Gantt chart
+
+![Rescheduled Gantt chart](docs/assets/dashboard-rescheduled-gantt.png)
+
 ## 1. Project Workflow
 
 ```mermaid
-flowchart TD
-    A[Stage 1: Custom JSSP Simulation<br/>5 jobs x 4 machines] --> B[FIFO Baseline + Fixed-parameter GA]
-    B --> C[Stage 2: JSPLIB Benchmark Experiments<br/>FT06, LA01, LA02]
-    C --> D[SLGA Transfer<br/>RL controls Pc and Pm]
-    D --> E[Stage 3: Smart Shop Monitoring System]
-    E --> F[Dataset and Algorithm Selection]
-    F --> G[Initial Schedule Generation]
-    G --> H[Interactive Gantt Chart and Metrics Dashboard]
-    H --> I[User-defined Disturbance<br/>Machine Breakdown / Emergency Job]
-    I --> J[Dynamic Rescheduling]
-    J --> K[Comparison: Initial vs Disturbed vs Rescheduled]
-    K --> L[Export Reports, Event Log, and HTML Figures]
+flowchart LR
+    P((Smart Shop<br/>Scheduler))
+
+    subgraph S1["Stage 1 - Simulation Foundation"]
+        A1["Custom 5x4 JSSP"]
+        A2["FIFO baseline"]
+        A3["Fixed-parameter GA"]
+        A1 --> A2 --> A3
+    end
+
+    subgraph S2["Stage 2 - Benchmark Intelligence"]
+        B1["JSPLIB datasets<br/>FT06 / LA01 / LA02"]
+        B2["GA vs SLGA"]
+        B3["RL controls Pc / Pm"]
+        B1 --> B2 --> B3
+    end
+
+    subgraph S3["Stage 3 - Interactive Factory Loop"]
+        C1["Dataset and algorithm selection"]
+        C2["Initial schedule generation"]
+        C3["Machine breakdown<br/>Emergency job"]
+        C4["Dynamic rescheduling"]
+        C5["Compare and export"]
+        C1 --> C2 --> C3 --> C4 --> C5
+    end
+
+    P --> A1
+    P --> B1
+    P --> C1
+    A3 -. project evolution .-> B1
+    B3 -. final system .-> C1
 ```
 
 The final system upgrades the project from static algorithm experiments to an interactive Industrial 4.0 scheduling platform. Users can select benchmark datasets and scheduling algorithms, configure production disturbances, trigger rescheduling, and observe the effects through Gantt charts, metrics, learning curves, and event logs.
@@ -115,21 +148,68 @@ This stage adds system-level and algorithm-level innovation, rather than only re
 ## 4. System Architecture
 
 ```mermaid
-flowchart LR
-    U[User Interface<br/>Streamlit] --> DL[Data Loader]
-    DL --> CORE[Scheduling Core]
-    CORE --> ALG[Algorithms<br/>FIFO / GA / SLGA / CP-AOL-SLGA]
-    ALG --> MET[Metrics Module]
-    ALG --> VIS[Visualization Module]
-    U --> DIS[Disturbance Module]
-    DIS --> RES[Dynamic Rescheduling]
-    RES --> ALG
-    MET --> UI2[Metric Cards and Tables]
-    VIS --> UI3[Interactive Gantt Charts and Curves]
-    RES --> LOG[Event Log]
-    UI2 --> EXP[Export Results]
-    UI3 --> EXP
-    LOG --> EXP
+flowchart TB
+    subgraph UI["Presentation Layer - Streamlit"]
+        U1["Control sidebar"]
+        U2["Metric cards"]
+        U3["Gantt / learning / comparison tabs"]
+        U4["Event log and exports"]
+    end
+
+    subgraph DATA["Data Layer"]
+        D1["Built-in custom case"]
+        D2["JSPLIB files<br/>FT06 / LA01 / LA02"]
+        D3["Common JSSP structure"]
+    end
+
+    subgraph ENGINE["Scheduling Engine"]
+        E1["Chromosome decoder"]
+        E2["FIFO"]
+        E3["GA"]
+        E4["SLGA"]
+        E5["CP-AOL-SLGA"]
+    end
+
+    subgraph EVENT["Disturbance and Repair Layer"]
+        R1["Machine breakdown"]
+        R2["Emergency job"]
+        R3["Freeze completed operations"]
+        R4["Re-optimize unfinished work"]
+    end
+
+    subgraph OUTPUT["Decision Output"]
+        O1["Makespan / utilization / idle time"]
+        O2["Schedule deviation"]
+        O3["Initial vs disturbed vs rescheduled"]
+        O4["CSV / HTML / event report"]
+    end
+
+    U1 --> D1
+    U1 --> D2
+    D1 --> D3
+    D2 --> D3
+    D3 --> E1
+    U1 --> R1
+    U1 --> R2
+    R1 --> R3
+    R2 --> R3
+    R3 --> R4
+    R4 --> E1
+    E1 --> E2
+    E1 --> E3
+    E1 --> E4
+    E1 --> E5
+    E2 --> O1
+    E3 --> O1
+    E4 --> O1
+    E5 --> O1
+    O1 --> O2
+    O2 --> O3
+    O3 --> O4
+    O1 --> U2
+    O3 --> U3
+    R4 --> U4
+    O4 --> U4
 ```
 
 Main modules:
@@ -301,16 +381,49 @@ The inserted job is merged with unfinished operations and included in the resche
 The rescheduling process is event-driven:
 
 ```mermaid
-flowchart TD
-    A[Initial Schedule] --> B[Disturbance Event Time t_event]
-    B --> C[Freeze Completed Operations]
-    C --> D[Extract Unfinished Operations]
-    D --> E[Add Emergency Job if Enabled]
-    E --> F[Update Machine Availability]
-    F --> G[Apply Breakdown Constraint]
-    G --> H[Run Selected Algorithm Again]
-    H --> I[Merge Frozen and Rescheduled Parts]
-    I --> J[Evaluate Metrics and Deviation]
+flowchart LR
+    START((Initial<br/>schedule))
+
+    subgraph EVENT["Disturbance Trigger"]
+        T1["Event time<br/>t_event"]
+        T2["Machine breakdown"]
+        T3["Emergency job"]
+    end
+
+    subgraph FREEZE["State Split"]
+        F1["Freeze completed operations"]
+        F2["Collect unfinished operations"]
+        F3["Update machine availability"]
+    end
+
+    subgraph REPAIR["Repair Optimization"]
+        R1["Apply breakdown constraint"]
+        R2["Insert emergency route"]
+        R3["Run selected algorithm"]
+    end
+
+    subgraph REVIEW["Decision Feedback"]
+        V1["Merge frozen and repaired parts"]
+        V2["Compute makespan / utilization"]
+        V3["Compute schedule deviation"]
+        V4["Compare three schedules"]
+    end
+
+    START --> T1
+    T1 --> T2
+    T1 --> T3
+    T2 --> F1
+    T3 --> F1
+    F1 --> F2
+    F2 --> F3
+    F3 --> R1
+    R1 --> R2
+    R2 --> R3
+    R3 --> V1
+    V1 --> V2
+    V2 --> V3
+    V3 --> V4
+    REVIEW -. feedback for next disturbance .-> T1
 ```
 
 Engineering simplification:
@@ -421,36 +534,37 @@ outputs/videos/simulation_demo.mp4
 
 ```text
 smart_shop_scheduler/
-├── app.py
-├── scheduler_core.py
-├── algorithms.py
-├── disturbance.py
-├── visualization.py
-├── metrics.py
-├── data_loader.py
-├── video_export.py
-├── requirements.txt
-├── README.md
-├── data/
-│   ├── ft06.txt
-│   ├── la01.txt
-│   ├── la02.txt
-│   └── instances.json
-└── outputs/
-    ├── reports/
-    ├── figures/
-    └── videos/
+|-- app.py
+|-- scheduler_core.py
+|-- algorithms.py
+|-- disturbance.py
+|-- visualization.py
+|-- metrics.py
+|-- data_loader.py
+|-- video_export.py
+|-- requirements.txt
+|-- README.md
+|-- docs/
+|   `-- assets/
+|-- data/
+|   |-- ft06.txt
+|   |-- la01.txt
+|   |-- la02.txt
+|   `-- instances.json
+`-- outputs/
+    |-- reports/
+    |-- figures/
+    `-- videos/
 ```
 
 For GitHub deployment, `app.py` and `requirements.txt` should be placed in the repository root.
 
 ---
-
 ## 13. References and Acknowledgements
 
 This project is built on the following academic and data references:
 
-1. Chen et al., **“A self-learning genetic algorithm based on reinforcement learning for flexible job-shop scheduling problem,”** Computers & Industrial Engineering, 2020.
+1. Chen et al., **"A self-learning genetic algorithm based on reinforcement learning for flexible job-shop scheduling problem,"** *Computers & Industrial Engineering*, 2020.
 2. Reference implementation: `olgi9911/Self-Learning-GA-for-Flexible-Job-Shop-Scheduling-Problem`.
 3. JSPLIB benchmark dataset: `tamy0612/JSPLIB`.
 4. Benchmark instances used in this project: FT06, LA01, LA02.
