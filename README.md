@@ -11,15 +11,15 @@
 
 ### Initial schedule dashboard
 
-![Initial schedule dashboard](docs/assets/dashboard-initial.png)
+![Initial schedule dashboard](docs/assets/dashboard-initial.jpg)
 
 ### Disturbance and performance comparison
 
-![Disturbance and performance comparison](docs/assets/dashboard-comparison.png)
+![Disturbance and performance comparison](docs/assets/dashboard-comparison.jpg)
 
 ### Rescheduled Gantt chart
 
-![Rescheduled Gantt chart](docs/assets/dashboard-rescheduled-gantt.png)
+![Rescheduled Gantt chart](docs/assets/dashboard-rescheduled-gantt.jpg)
 
 ## 1. Project Workflow
 
@@ -107,7 +107,7 @@ The second stage introduced public benchmark data from **JSPLIB**, including:
 
 The project then transferred the idea of **SLGA** from the paper:
 
-> Chen et al., “A self-learning genetic algorithm based on reinforcement learning for flexible job-shop scheduling problem,” Computers & Industrial Engineering, 2020.
+> Chen et al., "A self-learning genetic algorithm based on reinforcement learning for flexible job-shop scheduling problem," Computers & Industrial Engineering, 2020.
 
 The original paper focuses on **FJSP**. In this project, the reinforcement-learning-based parameter control idea is adapted to **JSSP**. RL does not directly generate schedules. Instead, it learns how to adjust the GA parameters:
 
