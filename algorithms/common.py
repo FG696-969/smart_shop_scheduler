@@ -20,6 +20,9 @@ class AlgorithmResult:
     action_history: List[str] = field(default_factory=list)
     reward_history: List[float] = field(default_factory=list)
     runtime: float = 0.0
+    loss_history: List[float] = field(default_factory=list)
+    epsilon_history: List[float] = field(default_factory=list)
+    q_value_history: List[List[float]] = field(default_factory=list)
 
 
 def chromosome_base(

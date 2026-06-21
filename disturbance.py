@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from algorithms import AlgorithmResult, run_algorithm
+from rl.dqn_agent import DQNAgent
 from scheduler_core import Jobs, ScheduleRecord, decode_chromosome
 
 
@@ -141,6 +142,8 @@ def dynamic_reschedule(
     emergency_time: Optional[int] = None,
     random_seed: int = 42,
     fast_mode: bool = True,
+    agent: Optional[DQNAgent] = None,
+    training: bool = False,
 ) -> Tuple[Jobs, AlgorithmResult, List[str]]:
     """Freeze completed operations and reschedule the remaining part."""
     logs: List[str] = []
@@ -163,12 +166,18 @@ def dynamic_reschedule(
         machine_breakdowns[machine_id] = (start, start + duration)
         logs.append(f"[{current_time:04d}] Machine M{machine_id + 1} unavailable from {start} to {start + duration}.")
 
+    dqn_kwargs = (
+        {"agent": agent, "training": training}
+        if algorithm == "DQN-AOL-GA"
+        else {}
+    )
     result = run_algorithm(
         algorithm,
         working_jobs,
         num_machines,
         random_seed=random_seed,
         fast_mode=fast_mode,
+        **dqn_kwargs,
         start_after=current_time,
         initial_job_ready=job_ready,
         initial_machine_ready=machine_ready,

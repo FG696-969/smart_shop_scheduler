@@ -12,12 +12,15 @@ def test_replay_buffer_is_bounded_and_copies_pushed_arrays():
     buffer.push(state, 1, 0.5, next_state, False)
     state[:] = 9.0
     next_state[:] = 8.0
+    copied = buffer.sample(1)
+
+    np.testing.assert_array_equal(copied.states[0], np.zeros(10))
+    np.testing.assert_array_equal(copied.next_states[0], np.ones(10))
+
     buffer.push(np.full(10, 2.0, dtype=np.float32), 2, 1.0, next_state, True)
     buffer.push(np.full(10, 3.0, dtype=np.float32), 3, -1.0, next_state, False)
 
     assert len(buffer) == 2
-    batch = buffer.sample(2)
-    assert not np.any(np.all(batch.states == 9.0, axis=1))
 
 
 def test_replay_buffer_sample_has_expected_shapes_and_dtypes():
