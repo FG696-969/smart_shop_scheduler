@@ -2,3 +2,4 @@ streamlit
 plotly
 pandas
 numpy
+torch>=2.2

@@ -9,3 +9,8 @@ outputs/
 
 .DS_Store
 Thumbs.db
+
+models/*.pt
+models/*.tmp
+outputs/training/
+.pytest_cache/
