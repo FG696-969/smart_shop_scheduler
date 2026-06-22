@@ -5,12 +5,13 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 ![PyTorch](https://img.shields.io/badge/Deep%20RL-Double%20DQN-EE4C2C)
 ![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B)
-![Tests](https://img.shields.io/badge/tests-75%20passed-2EA44F)
+![Tests](https://img.shields.io/badge/tests-78%20passed-2EA44F)
 
 ## 项目亮点
 
 - 用神经网络拟合动作价值函数，完成从表格 Q-learning 到 Double DQN 的升级。
 - DQN 不直接生成调度，而是根据种群状态选择 GA 的交叉、变异和瓶颈局部搜索策略。
+- 推理阶段采用三个独立小种群并行思路，在相同总评估预算内取最优结果，降低单次随机波动。
 - 支持 FT06、LA01、LA02 与自定义 5x4 JSSP 数据。
 - 支持设备故障、紧急订单、已完成工序冻结和剩余工序动态重调度。
 - 提供甘特图、奖励/损失/epsilon、动作分布、Q 值、事件日志和结果导出。
@@ -153,7 +154,7 @@ flowchart LR
 
 ## 实验结果
 
-实验配置：三个 JSPLIB 实例、5 个随机种子（11/22/33/44/55）、种群规模 60、迭代 100。除 FIFO 外，所有算法使用相同搜索预算。表中为 `平均 Cmax ± 标准差`，越低越好。
+实验配置：三个 JSPLIB 实例、5 个随机种子（11/22/33/44/55）、总种群规模 60、迭代 100。DQN 将种群拆分为三个 20 个体的独立搜索，总评估次数仍为 `60×100`。除 FIFO 外，所有算法使用相同搜索预算。表中为 `平均 Cmax ± 标准差`，越低越好。
 
 | 算法 | FT06 | LA01 | LA02 |
 | --- | ---: | ---: | ---: |
@@ -161,15 +162,15 @@ flowchart LR
 | GA | 58.20 ± 0.75 | 746.40 ± 33.58 | 767.20 ± 28.73 |
 | SLGA（表格 Q-learning） | 57.80 ± 0.98 | 730.20 ± 14.63 | **739.80 ± 16.10** |
 | CP-AOL-SLGA | 57.80 ± 0.75 | 748.00 ± 19.18 | 749.00 ± 15.01 |
-| **DQN-AOL-GA** | **57.00 ± 1.67** | **721.00 ± 16.99** | 754.40 ± 21.36 |
+| **DQN-AOL-GA** | **56.20 ± 1.17** | **727.40 ± 11.64** | **738.40 ± 16.64** |
 
 | 数据集 | BKS | DQN 最优值 | DQN 平均 Gap | DQN 平均运行时间 |
 | --- | ---: | ---: | ---: | ---: |
-| FT06 | 55 | **55** | 3.64% | 0.2362 s |
-| LA01 | 666 | 700 | 8.26% | 0.3044 s |
-| LA02 | 655 | 734 | 15.18% | 0.3044 s |
+| FT06 | 55 | **55** | 2.18% | 0.3468 s |
+| LA01 | 666 | 711 | 9.22% | 0.4935 s |
+| LA02 | 655 | 718 | 12.73% | 0.4211 s |
 
-结果说明：DQN-AOL-GA 在 FT06 和 LA01 的平均 Cmax 最低；LA02 上 SLGA 更稳定，说明当前训练数据量和网络规模仍有提升空间。三个数据集的平均归一化 Gap 为 9.03%，略低于 SLGA 的 9.23%。完整原始数据见 [`outputs/experiments/static_raw.csv`](outputs/experiments/static_raw.csv) 与 [`static_summary.csv`](outputs/experiments/static_summary.csv)。
+结果说明：DQN-AOL-GA 在三个数据集上的平均 Cmax 均为最低。三个数据集的平均归一化 Gap 为 8.04%，低于 SLGA 的 9.23%。多启动会增加神经网络推理开销，但单次运行仍低于 0.5 秒。完整原始数据见 [`outputs/experiments/static_raw.csv`](outputs/experiments/static_raw.csv) 与 [`static_summary.csv`](outputs/experiments/static_summary.csv)。
 
 ### 动态故障验证
 
@@ -177,11 +178,11 @@ FT06、seed=42、M2 在 `t=20~40` 停机：
 
 | 指标 | 结果 |
 | --- | ---: |
-| 初始计划 Cmax | 60 |
-| 仅施加故障、不优化 Cmax | 74 |
-| DQN 动态重调度 Cmax | **62** |
-| 相对未优化方案降低 | **16.22%** |
-| 调度偏差 | 120 |
+| 初始计划 Cmax | 55 |
+| 仅施加故障、不优化 Cmax | 81 |
+| DQN 动态重调度 Cmax | **65** |
+| 相对未优化方案降低 | **19.75%** |
+| 调度偏差 | 226 |
 
 ## 快速开始
 
@@ -198,9 +199,9 @@ python -m pip install -r requirements.txt
 ```powershell
 python -m training.train_dqn `
   --datasets FT06 LA01 LA02 `
-  --episodes 45 `
+  --episodes 90 `
   --checkpoint models\dqn_aol_ga.pt `
-  --base-seed 84
+  --base-seed 42
 ```
 
 启动系统：

@@ -56,14 +56,34 @@ def run_algorithm(
     if name == "DQN-AOL-GA":
         if not isinstance(agent, DQNAgent):
             raise ValueError("DQN-AOL-GA requires a DQNAgent")
-        return run_dqn_ga(
-            jobs,
-            num_machines,
-            agent=agent,
-            population_size=population_size,
-            generations=generations,
-            random_seed=random_seed,
-            training=training,
-            **decode_kwargs,
-        )
+        if training:
+            return run_dqn_ga(
+                jobs,
+                num_machines,
+                agent=agent,
+                population_size=population_size,
+                generations=generations,
+                random_seed=random_seed,
+                training=True,
+                **decode_kwargs,
+            )
+
+        restart_count = 3
+        restart_population = population_size // restart_count
+        results = [
+            run_dqn_ga(
+                jobs,
+                num_machines,
+                agent=agent,
+                population_size=restart_population,
+                generations=generations,
+                random_seed=random_seed + restart,
+                training=False,
+                **decode_kwargs,
+            )
+            for restart in range(restart_count)
+        ]
+        best_result = min(results, key=lambda result: result.makespan)
+        best_result.runtime = sum(result.runtime for result in results)
+        return best_result
     raise ValueError(f"Unknown algorithm: {name}")

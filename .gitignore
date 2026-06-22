@@ -13,6 +13,7 @@ outputs/*
 Thumbs.db
 
 models/*.pt
+!models/dqn_aol_ga.pt
 models/*.tmp
 outputs/training/
 .pytest_cache/
