@@ -325,7 +325,7 @@ elif checkpoint_state == "incompatible":
 else:
     st.sidebar.warning("DQN model missing")
 
-if st.sidebar.button("Generate initial schedule", type="primary", use_container_width=True):
+if st.sidebar.button("Generate initial schedule", type="primary", width="stretch"):
     try:
         with st.spinner("Optimizing schedule..."):
             run_initial(dataset_name, algorithm_name, fast_mode, seed, checkpoint_path)
@@ -352,7 +352,7 @@ emergency_route_text = st.sidebar.text_input(
     "Emergency route", value="M1:4, M3:5, M2:3"
 )
 
-if st.sidebar.button("Apply disturbance and reschedule", use_container_width=True):
+if st.sidebar.button("Apply disturbance and reschedule", width="stretch"):
     try:
         with st.spinner("Rescheduling remaining operations..."):
             run_disturbance(
@@ -371,7 +371,7 @@ if st.sidebar.button("Apply disturbance and reschedule", use_container_width=Tru
     except Exception as exc:
         st.sidebar.error(str(exc))
 
-if st.sidebar.button("Export results", use_container_width=True):
+if st.sidebar.button("Export results", width="stretch"):
     try:
         export_results(
             st.session_state["initial_result"],
@@ -419,10 +419,10 @@ with tab_schedule:
                 breakdown=st.session_state.get("breakdown"),
                 current_time=st.session_state.get("current_time"),
             ),
-            use_container_width=True,
+            width="stretch",
         )
         with st.expander("Operation table"):
-            st.dataframe(schedule_dataframe(initial_result.schedule), use_container_width=True)
+            st.dataframe(schedule_dataframe(initial_result.schedule), width="stretch")
 
 with tab_intelligence:
     status_cols = st.columns(4)
@@ -484,12 +484,12 @@ with tab_intelligence:
             dqn_learning_figure(
                 report.episode_rewards, report.losses, report.epsilon_history
             ),
-            use_container_width=True,
+            width="stretch",
         )
         expanded_actions = [
             action for action, count in report.action_counts.items() for _ in range(count)
         ]
-        st.plotly_chart(action_distribution_figure(expanded_actions), use_container_width=True)
+        st.plotly_chart(action_distribution_figure(expanded_actions), width="stretch")
 
     if shown_result:
         st.subheader(f"Current run: {shown_result.name}")
@@ -499,7 +499,7 @@ with tab_intelligence:
                 convergence_figure(
                     shown_result.history, f"Convergence - {shown_result.name}"
                 ),
-                use_container_width=True,
+                width="stretch",
             )
         with monitor_cols[1]:
             if shown_result.name == "DQN-AOL-GA":
@@ -509,7 +509,7 @@ with tab_intelligence:
                         shown_result.loss_history,
                         shown_result.epsilon_history,
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
             elif shown_result.pc_history or shown_result.state_history:
                 st.plotly_chart(
@@ -519,7 +519,7 @@ with tab_intelligence:
                         shown_result.state_history,
                         shown_result.action_history,
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
             else:
                 st.info("This baseline has no reinforcement-learning trace.")
@@ -529,7 +529,7 @@ with tab_intelligence:
             with detail_cols[0]:
                 st.plotly_chart(
                     action_distribution_figure(shown_result.action_history),
-                    use_container_width=True,
+                    width="stretch",
                 )
             with detail_cols[1]:
                 st.plotly_chart(
@@ -537,7 +537,7 @@ with tab_intelligence:
                         shown_result.q_value_history,
                         [action.label for action in SEARCH_ACTIONS],
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
 
 with tab_disturbance:
@@ -560,7 +560,7 @@ with tab_disturbance:
                     breakdown=breakdown,
                     current_time=current_time,
                 ),
-                use_container_width=True,
+                width="stretch",
             )
         with inner_disturbed:
             disturbed_schedule = st.session_state.get("disturbed_schedule")
@@ -575,7 +575,7 @@ with tab_disturbance:
                         emergency_job_id=emergency_job_id,
                         current_time=current_time,
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
             else:
                 st.info("Apply a disturbance from the sidebar.")
@@ -591,7 +591,7 @@ with tab_disturbance:
                         emergency_job_id=emergency_job_id,
                         current_time=current_time,
                     ),
-                    use_container_width=True,
+                    width="stretch",
                 )
             else:
                 st.info("No rescheduled plan yet.")
@@ -608,8 +608,8 @@ with tab_disturbance:
                     st.session_state["rescheduled_result"].schedule, int(num_machines)
                 ),
             }
-            st.plotly_chart(metrics_comparison_figure(metrics_map), use_container_width=True)
-            st.dataframe(pd.DataFrame(metrics_map).T, use_container_width=True)
+            st.plotly_chart(metrics_comparison_figure(metrics_map), width="stretch")
+            st.dataframe(pd.DataFrame(metrics_map).T, width="stretch")
 
         st.subheader("Event log")
         logs = st.session_state.get("event_logs", [])
