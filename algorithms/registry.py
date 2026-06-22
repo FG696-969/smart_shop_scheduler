@@ -19,6 +19,8 @@ def run_algorithm(
     training: bool = False,
     **decode_kwargs,
 ) -> AlgorithmResult:
+    population_size = 60 if fast_mode else 120
+    generations = 100 if fast_mode else 250
     if name == "FIFO":
         return run_fifo(
             jobs, num_machines, random_seed=random_seed, **decode_kwargs
@@ -27,8 +29,8 @@ def run_algorithm(
         return run_ga(
             jobs,
             num_machines,
-            population_size=70 if fast_mode else 120,
-            generations=100 if fast_mode else 250,
+            population_size=population_size,
+            generations=generations,
             random_seed=random_seed,
             **decode_kwargs,
         )
@@ -36,8 +38,8 @@ def run_algorithm(
         return run_slga(
             jobs,
             num_machines,
-            population_size=70 if fast_mode else 120,
-            generations=110 if fast_mode else 250,
+            population_size=population_size,
+            generations=generations,
             random_seed=random_seed,
             **decode_kwargs,
         )
@@ -45,8 +47,8 @@ def run_algorithm(
         return run_slga(
             jobs,
             num_machines,
-            population_size=70 if fast_mode else 120,
-            generations=120 if fast_mode else 260,
+            population_size=population_size,
+            generations=generations,
             random_seed=random_seed,
             cp_aol=True,
             **decode_kwargs,
@@ -54,16 +56,14 @@ def run_algorithm(
     if name == "DQN-AOL-GA":
         if not isinstance(agent, DQNAgent):
             raise ValueError("DQN-AOL-GA requires a DQNAgent")
-        dqn_kwargs = {}
-        if fast_mode:
-            dqn_kwargs = {"population_size": 20, "generations": 12}
         return run_dqn_ga(
             jobs,
             num_machines,
             agent=agent,
+            population_size=population_size,
+            generations=generations,
             random_seed=random_seed,
             training=training,
-            **dqn_kwargs,
             **decode_kwargs,
         )
     raise ValueError(f"Unknown algorithm: {name}")
