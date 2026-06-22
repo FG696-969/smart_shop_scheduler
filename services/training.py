@@ -30,6 +30,7 @@ class TrainingReport:
     episode_rewards: list[float] = field(default_factory=list)
     final_makespans: list[int] = field(default_factory=list)
     losses: list[float] = field(default_factory=list)
+    epsilon_history: list[float] = field(default_factory=list)
     action_counts: dict[str, int] = field(default_factory=dict)
     runtimes: list[float] = field(default_factory=list)
     checkpoint_path: Path = Path()
@@ -58,6 +59,7 @@ def train_dqn(config: TrainingConfig) -> TrainingReport:
     episode_rewards: list[float] = []
     final_makespans: list[int] = []
     losses: list[float] = []
+    epsilon_history: list[float] = []
     runtimes: list[float] = []
     action_counts: Counter[str] = Counter()
 
@@ -76,6 +78,7 @@ def train_dqn(config: TrainingConfig) -> TrainingReport:
         episode_rewards.append(float(sum(result.reward_history)))
         final_makespans.append(int(result.makespan))
         losses.extend(result.loss_history)
+        epsilon_history.append(float(agent.epsilon))
         action_counts.update(result.action_history)
         runtimes.append(float(result.runtime))
 
@@ -91,6 +94,7 @@ def train_dqn(config: TrainingConfig) -> TrainingReport:
         episode_rewards=episode_rewards,
         final_makespans=final_makespans,
         losses=losses,
+        epsilon_history=epsilon_history,
         action_counts=dict(action_counts),
         runtimes=runtimes,
         checkpoint_path=checkpoint_path,

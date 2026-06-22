@@ -23,6 +23,7 @@ def test_training_service_writes_checkpoint_and_complete_report(tmp_path: Path):
     assert checkpoint.exists()
     assert len(report.episode_rewards) == 2
     assert len(report.final_makespans) == 2
+    assert len(report.epsilon_history) == 2
     assert len(report.runtimes) == 2
     assert report.losses
     assert sum(report.action_counts.values()) == 10
