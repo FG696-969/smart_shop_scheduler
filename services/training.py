@@ -61,25 +61,23 @@ def train_dqn(config: TrainingConfig) -> TrainingReport:
     runtimes: list[float] = []
     action_counts: Counter[str] = Counter()
 
-    run_index = 0
-    for _episode_index in range(config.episodes):
-        for dataset in config.datasets:
-            jobs, metadata = load_dataset(dataset)
-            result = run_dqn_ga(
-                jobs,
-                int(metadata["machines"]),
-                agent=agent,
-                population_size=config.population_size,
-                generations=config.generations,
-                random_seed=config.base_seed + run_index,
-                training=True,
-            )
-            episode_rewards.append(float(sum(result.reward_history)))
-            final_makespans.append(int(result.makespan))
-            losses.extend(result.loss_history)
-            action_counts.update(result.action_history)
-            runtimes.append(float(result.runtime))
-            run_index += 1
+    for episode_index in range(config.episodes):
+        dataset = config.datasets[episode_index % len(config.datasets)]
+        jobs, metadata = load_dataset(dataset)
+        result = run_dqn_ga(
+            jobs,
+            int(metadata["machines"]),
+            agent=agent,
+            population_size=config.population_size,
+            generations=config.generations,
+            random_seed=config.base_seed + episode_index,
+            training=True,
+        )
+        episode_rewards.append(float(sum(result.reward_history)))
+        final_makespans.append(int(result.makespan))
+        losses.extend(result.loss_history)
+        action_counts.update(result.action_history)
+        runtimes.append(float(result.runtime))
 
     metadata = CheckpointMetadata(
         state_version=DQN_STATE_VERSION,

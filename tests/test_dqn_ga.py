@@ -5,6 +5,7 @@ import pytest
 import torch
 
 from algorithms import AlgorithmResult, run_algorithm
+import algorithms.dqn_ga as dqn_ga
 from algorithms.dqn_ga import _state_context, run_dqn_ga
 from data_loader import load_dataset
 from rl.dqn_agent import DQNAgent, DQNConfig
@@ -116,3 +117,32 @@ def test_dqn_state_context_uses_remaining_work_and_disturbance_data():
     assert context.machine_loads == (2.0, 8.0)
     assert context.breakdown_pressure == 0.25
     assert context.emergency_job is True
+
+
+def test_reward_uses_only_weighted_terms_and_clips_exactly():
+    assert hasattr(dqn_ga, "_calculate_reward")
+    reward = dqn_ga._calculate_reward(
+        best_improvement=0.2,
+        average_improvement=-0.1,
+        diversity_recovery=0.4,
+        action_cost=0.3,
+    )
+
+    assert reward == pytest.approx(0.135)
+    assert dqn_ga._calculate_reward(4.0, 0.0, 0.0, 0.0) == 1.0
+    assert dqn_ga._calculate_reward(-4.0, 0.0, 0.0, 0.0) == -1.0
+
+
+def test_reward_adds_terminal_bonus_once_only_for_final_improvement():
+    assert hasattr(dqn_ga, "_calculate_reward")
+    nonterminal = dqn_ga._calculate_reward(0.1, 0.2, 0.3, 0.4)
+    terminal = dqn_ga._calculate_reward(
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        terminal_improved=True,
+    )
+
+    assert nonterminal == pytest.approx(0.115)
+    assert terminal == pytest.approx(0.135)

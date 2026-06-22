@@ -6,7 +6,6 @@ from pathlib import Path
 from algorithms import AlgorithmResult, run_algorithm
 from data_loader import load_dataset
 from rl.checkpoint import load_checkpoint
-from rl.dqn_agent import DQNConfig
 
 
 @dataclass(frozen=True)
@@ -42,9 +41,7 @@ def run_schedule(request: ScheduleRequest) -> AlgorithmResult:
             "Train a model before running DQN-AOL-GA."
         )
     try:
-        agent, _metadata = load_checkpoint(
-            checkpoint_path, DQNConfig(seed=request.seed)
-        )
+        agent, _metadata = load_checkpoint(checkpoint_path)
     except Exception as exc:
         raise ValueError(
             f"Incompatible DQN checkpoint at {checkpoint_path}: {exc}. "

@@ -49,3 +49,29 @@ def test_training_cli_returns_nonzero_without_replacing_checkpoint(
     assert exit_code == 1
     assert "Training failed:" in error
     assert checkpoint.read_bytes() == b"last-known-good"
+
+
+def test_training_cli_episodes_is_total_across_datasets(tmp_path: Path, capsys):
+    checkpoint = tmp_path / "twelve.pt"
+
+    exit_code = main(
+        [
+            "--datasets",
+            "Custom 5x4",
+            "Custom 5x4",
+            "--episodes",
+            "12",
+            "--checkpoint",
+            str(checkpoint),
+            "--fast",
+        ]
+    )
+
+    episode_lines = [
+        line
+        for line in capsys.readouterr().out.splitlines()
+        if line.startswith("Episode ")
+    ]
+    assert exit_code == 0
+    assert len(episode_lines) == 12
+    assert episode_lines[-1].startswith("Episode 12/12:")

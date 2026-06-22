@@ -70,3 +70,34 @@ def test_inference_and_insufficient_training_do_not_mutate_agent():
         torch.testing.assert_close(tensor, before_online[name])
     for name, tensor in agent.target.state_dict().items():
         torch.testing.assert_close(tensor, before_target[name])
+
+
+def test_double_dqn_uses_online_argmax_and_target_value():
+    agent = DQNAgent(
+        DQNConfig(
+            state_size=2,
+            action_size=3,
+            gamma=1.0,
+            lr=0.0,
+            batch_size=1,
+            target_sync_interval=100,
+        )
+    )
+    with torch.no_grad():
+        for parameter in agent.online.parameters():
+            parameter.zero_()
+        for parameter in agent.target.parameters():
+            parameter.zero_()
+        agent.online.layers[-1].bias.copy_(torch.tensor([0.0, 5.0, 0.0]))
+        agent.target.layers[-1].bias.copy_(torch.tensor([0.0, 2.0, 9.0]))
+    agent.remember(
+        np.zeros(2, dtype=np.float32),
+        0,
+        0.0,
+        np.ones(2, dtype=np.float32),
+        False,
+    )
+
+    loss = agent.train_step()
+
+    assert loss == 1.5

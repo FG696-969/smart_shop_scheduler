@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 import torch
 
 from .dqn_agent import DQNAgent, DQNConfig
 
-DQN_STATE_VERSION = "dqn-state-v1"
+DQN_STATE_VERSION = "dqn-state-v2"
 GA_ACTION_VERSION = "ga-actions-v1"
 STATE_VERSION = DQN_STATE_VERSION
 ACTION_VERSION = GA_ACTION_VERSION
@@ -32,11 +32,7 @@ def save_checkpoint(
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
     payload = {
-        "online": agent.online.state_dict(),
-        "target": agent.target.state_dict(),
-        "optimizer": agent.optimizer.state_dict(),
-        "epsilon": agent.epsilon,
-        "update_count": agent.update_count,
+        "agent": agent.state_dict(),
         "config": asdict(agent.config),
         "metadata": asdict(metadata),
     }
@@ -50,7 +46,7 @@ def save_checkpoint(
 
 def load_checkpoint(
     path: str | os.PathLike[str],
-    config: DQNConfig,
+    config: DQNConfig | None = None,
     expected_state_version: str = DQN_STATE_VERSION,
     expected_action_version: str = GA_ACTION_VERSION,
 ) -> tuple[DQNAgent, CheckpointMetadata]:
@@ -74,22 +70,30 @@ def load_checkpoint(
             f"expected {expected_action_version}, got {metadata.action_version}"
         )
 
-    saved_config = payload["config"]
-    if int(saved_config["state_size"]) != config.state_size:
-        raise ValueError(
-            "Incompatible state size: "
-            f"checkpoint has {saved_config['state_size']}, config has {config.state_size}"
+    saved_config = DQNConfig(**payload["config"])
+    if config is not None:
+        training_fields = [
+            field.name for field in fields(DQNConfig) if field.name != "device"
+        ]
+        mismatches = [
+            field_name
+            for field_name in training_fields
+            if getattr(saved_config, field_name) != getattr(config, field_name)
+        ]
+    else:
+        mismatches = []
+    if mismatches:
+        mismatch_details = ", ".join(
+            f"{field_name} (checkpoint={getattr(saved_config, field_name)!r}, "
+            f"caller={getattr(config, field_name)!r})"
+            for field_name in mismatches
         )
-    if int(saved_config["action_size"]) != config.action_size:
         raise ValueError(
-            "Incompatible action size: "
-            f"checkpoint has {saved_config['action_size']}, config has {config.action_size}"
+            "DQN config mismatch for training-relevant field(s): "
+            f"{mismatch_details}. Omit config to use the checkpoint configuration."
         )
 
-    agent = DQNAgent(config)
-    agent.online.load_state_dict(payload["online"])
-    agent.target.load_state_dict(payload["target"])
-    agent.optimizer.load_state_dict(payload["optimizer"])
-    agent.epsilon = float(payload["epsilon"])
-    agent.update_count = int(payload["update_count"])
+    resolved_config = saved_config if config is None else config
+    agent = DQNAgent(resolved_config)
+    agent.load_state_dict(payload["agent"])
     return agent, metadata

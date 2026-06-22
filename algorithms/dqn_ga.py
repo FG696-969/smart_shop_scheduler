@@ -26,6 +26,27 @@ from .operators import (
     swap_mutation,
 )
 
+TERMINAL_IMPROVEMENT_BONUS = 0.02
+
+
+def _calculate_reward(
+    best_improvement: float,
+    average_improvement: float,
+    diversity_recovery: float,
+    action_cost: float,
+    *,
+    terminal_improved: bool = False,
+) -> float:
+    reward = (
+        0.65 * best_improvement
+        + 0.20 * average_improvement
+        + 0.10 * diversity_recovery
+        - 0.05 * action_cost
+    )
+    if terminal_improved:
+        reward += TERMINAL_IMPROVEMENT_BONUS
+    return float(np.clip(reward, -1.0, 1.0))
+
 
 def _remaining_operation_context(
     jobs: Jobs,
@@ -230,18 +251,14 @@ def run_dqn_ga(
             if best_improvement <= 0.0
             else 0.0
         )
-        reward = (
-            0.65 * best_improvement
-            + 0.20 * average_improvement
-            + 0.10 * diversity_recovery
-            - 0.05 * action.cost
-        )
-        if improved_global_best:
-            reward += 0.03
         done = generation == generations - 1
-        if done and best_makespan < initial_best:
-            reward += 0.02
-        reward = float(np.clip(reward, -1.0, 1.0))
+        reward = _calculate_reward(
+            best_improvement,
+            average_improvement,
+            diversity_recovery,
+            action.cost,
+            terminal_improved=done and best_makespan < initial_best,
+        )
 
         stagnation = 0 if generation_best_makespan < previous_best else stagnation + 1
         next_context = _state_context(

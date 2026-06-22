@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from typing import Mapping
 
 import numpy as np
 import torch
@@ -49,10 +50,9 @@ class DQNAgent:
             raise ValueError("Batch size and target sync interval must be positive")
 
         self.config = config
-        random.seed(config.seed)
-        np.random.seed(config.seed)
         torch.manual_seed(config.seed)
         self._random = random.Random(config.seed)
+        self._np_random = np.random.RandomState(config.seed)
         self.device = torch.device(config.device)
 
         self.online = QNetwork(config.state_size, config.action_size).to(self.device)
@@ -63,6 +63,59 @@ class DQNAgent:
         self.replay_buffer = ReplayBuffer(config.replay_capacity, config.seed)
         self.epsilon = float(config.epsilon_start)
         self.update_count = 0
+
+    def state_dict(self) -> dict[str, object]:
+        bit_generator, keys, position, has_gauss, cached_gaussian = (
+            self._np_random.get_state()
+        )
+        state: dict[str, object] = {
+            "online": self.online.state_dict(),
+            "target": self.target.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "replay_buffer": self.replay_buffer.state_dict(),
+            "epsilon": self.epsilon,
+            "update_count": self.update_count,
+            "exploration_random_state": self._random.getstate(),
+            "numpy_random_state": {
+                "bit_generator": bit_generator,
+                "keys": keys.tolist(),
+                "position": position,
+                "has_gauss": has_gauss,
+                "cached_gaussian": cached_gaussian,
+            },
+            "torch_random_state": torch.get_rng_state(),
+        }
+        if torch.cuda.is_available():
+            state["torch_cuda_random_state"] = torch.cuda.get_rng_state_all()
+        return state
+
+    def load_state_dict(self, state: Mapping[str, object]) -> None:
+        self.online.load_state_dict(state["online"])
+        self.target.load_state_dict(state["target"])
+        self.optimizer.load_state_dict(state["optimizer"])
+        for optimizer_state in self.optimizer.state.values():
+            for key, value in optimizer_state.items():
+                if isinstance(value, torch.Tensor):
+                    optimizer_state[key] = value.to(self.device)
+        self.replay_buffer.load_state_dict(state["replay_buffer"])
+        self.epsilon = float(state["epsilon"])
+        self.update_count = int(state["update_count"])
+        self._random.setstate(state["exploration_random_state"])
+
+        numpy_state = state["numpy_random_state"]
+        self._np_random.set_state(
+            (
+                str(numpy_state["bit_generator"]),
+                np.asarray(numpy_state["keys"], dtype=np.uint32),
+                int(numpy_state["position"]),
+                int(numpy_state["has_gauss"]),
+                float(numpy_state["cached_gaussian"]),
+            )
+        )
+        torch.set_rng_state(state["torch_random_state"].cpu())
+        cuda_state = state.get("torch_cuda_random_state")
+        if cuda_state is not None and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(cuda_state)
 
     def _state_array(self, state: np.ndarray) -> np.ndarray:
         array = np.asarray(state, dtype=np.float32)

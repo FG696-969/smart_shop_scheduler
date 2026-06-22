@@ -85,3 +85,35 @@ def test_dqn_schedule_loads_compatible_checkpoint(tmp_path: Path):
 
     assert result.name == "DQN-AOL-GA"
     assert result.chromosome
+
+
+def test_dqn_schedule_uses_saved_training_config(tmp_path: Path):
+    from rl.checkpoint import DQN_STATE_VERSION
+
+    checkpoint = tmp_path / "trained-agent.pt"
+    save_checkpoint(
+        checkpoint,
+        DQNAgent(
+            DQNConfig(
+                seed=7,
+                batch_size=4,
+                replay_capacity=50,
+                target_sync_interval=12,
+            )
+        ),
+        CheckpointMetadata(
+            DQN_STATE_VERSION, GA_ACTION_VERSION, 7, ("Custom 5x4",), 1
+        ),
+    )
+
+    result = run_schedule(
+        ScheduleRequest(
+            dataset="Custom 5x4",
+            algorithm="DQN-AOL-GA",
+            seed=99,
+            fast_mode=True,
+            checkpoint_path=checkpoint,
+        )
+    )
+
+    assert result.name == "DQN-AOL-GA"

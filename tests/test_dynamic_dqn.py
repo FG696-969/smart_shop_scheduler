@@ -45,5 +45,48 @@ def test_disturbance_accepts_dqn_agent_and_preserves_frozen_records():
         (record["job_id"], record["operation_id"]): record
         for record in result.schedule
     }
+    expected_keys = {
+        (job_id, operation_id)
+        for job_id, job in enumerate(updated_jobs)
+        for operation_id in range(len(job))
+    }
+    assert set(result_by_key) == expected_keys
+
+    for job_id, job in enumerate(updated_jobs):
+        records = [
+            result_by_key[(job_id, operation_id)]
+            for operation_id in range(len(job))
+        ]
+        for operation_id, record in enumerate(records):
+            machine_id, processing_time = job[operation_id]
+            assert record["machine_id"] == machine_id
+            assert record["processing_time"] == processing_time
+            assert record["end"] - record["start"] == processing_time
+        for previous, current in zip(records, records[1:]):
+            assert previous["end"] <= current["start"]
+
+    for machine_id in range(machines):
+        machine_records = sorted(
+            (
+                record
+                for record in result.schedule
+                if record["machine_id"] == machine_id
+            ),
+            key=lambda record: record["start"],
+        )
+        for previous, current in zip(machine_records, machine_records[1:]):
+            assert previous["end"] <= current["start"]
+
+    for record in result.schedule:
+        if record["machine_id"] == 1:
+            assert record["end"] <= 20 or record["start"] >= 35
+
+    emergency_job_id = len(jobs)
+    emergency_records = [
+        record for record in result.schedule if record["job_id"] == emergency_job_id
+    ]
+    assert len(emergency_records) == 3
+    assert all(record["start"] >= 20 for record in emergency_records)
+
     for key, frozen_record in frozen_before_event.items():
         assert result_by_key[key] == frozen_record
