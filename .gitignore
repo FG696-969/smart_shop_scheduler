@@ -5,7 +5,9 @@ __pycache__/
 venv/
 env/
 
-outputs/
+outputs/*
+!outputs/experiments/
+!outputs/experiments/*.csv
 
 .DS_Store
 Thumbs.db
